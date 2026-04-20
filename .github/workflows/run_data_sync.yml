@@ -7,6 +7,10 @@ on:
   push:
     branches:
       - master
+permissions:
+  contents: write       # 允许修改仓库内容
+  pages: write          # 允许部署 GitHub Pages
+  id-token: write       # 如果你使用了 OIDC
     paths:
       - run_page/nike_sync.py
       - run_page/nike_to_strava_sync.py
