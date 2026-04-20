@@ -259,9 +259,18 @@ jobs:
           python run_page/gen_svg.py --from-db --type monthoflife --birth "${{env.BIRTHDAY_MONTH}}" --special-color "#f9d367"  --special-color2 "#f0a1a8" --output assets/mol_skiing.svg --use-localtime --athlete "${{env.ATHLETE}}" --title "Skier Month of Life" --sport-type skiing
 
       - name: Make year summary
-        if: env.GENERATE_MONTH_OF_LIFE == 'true'
+        if: env.RUN_TYPE != 'pass'   # 只要不是 pass 就生成年度总结，更合理
+        env:
+          ATHLETE: ${{ env.ATHLETE }}
         run: |
-          python run_page/gen_svg.py --from-db --type year_summary --output assets/year_summary.svg --athlete "${{ env.ATHLETE }}"
+          python run_page/gen_svg.py \
+            --from-db \
+            --type year_summary \
+            --output assets/year_summary.svg \
+            --athlete "${ATHLETE}" \
+            --language zh_CN \
+            --title "$(date +"%Y") 年度跑步总结" \
+            --use-localtime
 
       - name: Save data to parqent
         if: env.SAVE_TO_PARQENT == 'true'
