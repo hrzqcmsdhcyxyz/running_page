@@ -29,9 +29,11 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
+      # ---------------- Checkout ----------------
       - name: Checkout
         uses: actions/checkout@v4
 
+      # ---------------- Python Setup ----------------
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -58,121 +60,61 @@ jobs:
           warp-cli --accept-tos status
           curl -s https://cloudflare.com/cdn-cgi/trace | grep -E "ip|warp"
 
-      # ---------------- Cache ----------------
-      - name: Cache Data Files
-        if: env.SAVE_DATA_IN_GITHUB_CACHE == 'true'
-        uses: actions/cache@v4
-        with:
-          path: |
-            activities
-            assets
-            GPX_OUT
-            TCX_OUT
-            FIT_OUT
-            Workouts
-            run_page/data.db
-            src/static/activities.json
-            imported.json
-          key: ${{ env.DATA_CACHE_PREFIX }}-${{ github.sha }}-${{ github.run_id }}
-          restore-keys: |
-            ${{ env.DATA_CACHE_PREFIX }}-${{ github.sha }}-
-            ${{ env.DATA_CACHE_PREFIX }}-
-
-      # ---------------- 同步步骤 + 安全 Secret 检查 ----------------
+      # ---------------- Sync Steps ----------------
+      
+      # Keep
+      - name: Run sync Keep
+        if: env.RUN_TYPE == 'keep'
+        run: |
+          if [ -z "${{ secrets.KEEP_MOBILE }}" ]; then echo "⚠️ KEEP_MOBILE not set"; exit 1; fi
+          if [ -z "${{ secrets.KEEP_PASSWORD }}" ]; then echo "⚠️ KEEP_PASSWORD not set"; exit 1; fi
+          python run_page/keep_sync.py "${{ secrets.KEEP_MOBILE }}" "${{ secrets.KEEP_PASSWORD }}" --with-tcx
 
       # Nike
       - name: Run sync Nike
         if: env.RUN_TYPE == 'nike'
         run: |
-          if [ -z "${{ secrets.NIKE_REFRESH_TOKEN }}" ]; then echo "⚠️ NIKE_REFRESH_TOKEN not set"; fi
-          echo "Running nike_sync.py..."
-          python run_page/nike_sync.py "${{ secrets.NIKE_REFRESH_TOKEN }}" || echo "⚠️ nike_sync.py failed"
-
-      - name: Run sync Nike to Strava
-        if: env.RUN_TYPE == 'nike_to_strava'
-        run: |
-          for s in NIKE_REFRESH_TOKEN STRAVA_CLIENT_ID STRAVA_CLIENT_SECRET STRAVA_CLIENT_REFRESH_TOKEN; do
-            if [ -z "${{ secrets[s] }}" ]; then echo "⚠️ Warning: $s not set"; fi
-          done
-          echo "Running nike_to_strava_sync.py..."
-          python run_page/nike_to_strava_sync.py \
-            "${{ secrets.NIKE_REFRESH_TOKEN }}" \
-            "${{ secrets.STRAVA_CLIENT_ID }}" \
-            "${{ secrets.STRAVA_CLIENT_SECRET }}" \
-            "${{ secrets.STRAVA_CLIENT_REFRESH_TOKEN }}" || echo "⚠️ nike_to_strava_sync.py failed"
-
-      # Keep
-      - name: Run sync Keep
-        if: env.RUN_TYPE == 'keep'
-        run: |
-          for s in KEEP_MOBILE KEEP_PASSWORD; do
-            if [ -z "${{ secrets[s] }}" ]; then echo "⚠️ Warning: $s not set"; fi
-          done
-          echo "Running keep_sync.py..."
-          python run_page/keep_sync.py "${{ secrets.KEEP_MOBILE }}" "${{ secrets.KEEP_PASSWORD }}" --with-tcx || echo "⚠️ keep_sync.py failed"
-
-      - name: Run sync Keep to Strava
-        if: env.RUN_TYPE == 'keep_to_strava_sync'
-        run: |
-          for s in KEEP_MOBILE KEEP_PASSWORD STRAVA_CLIENT_ID STRAVA_CLIENT_SECRET STRAVA_CLIENT_REFRESH_TOKEN; do
-            if [ -z "${{ secrets[s] }}" ]; then echo "⚠️ Warning: $s not set"; fi
-          done
-          echo "Running keep_to_strava_sync.py..."
-          python run_page/keep_to_strava_sync.py \
-            "${{ secrets.KEEP_MOBILE }}" \
-            "${{ secrets.KEEP_PASSWORD }}" \
-            "${{ secrets.STRAVA_CLIENT_ID }}" \
-            "${{ secrets.STRAVA_CLIENT_SECRET }}" \
-            "${{ secrets.STRAVA_CLIENT_REFRESH_TOKEN }}" \
-            --sync-types running cycling hiking || echo "⚠️ keep_to_strava_sync.py failed"
+          if [ -z "${{ secrets.NIKE_REFRESH_TOKEN }}" ]; then echo "⚠️ NIKE_REFRESH_TOKEN not set"; exit 1; fi
+          python run_page/nike_sync.py "${{ secrets.NIKE_REFRESH_TOKEN }}"
 
       # Strava
       - name: Run sync Strava
         if: env.RUN_TYPE == 'strava'
         run: |
-          for s in STRAVA_CLIENT_ID STRAVA_CLIENT_SECRET STRAVA_CLIENT_REFRESH_TOKEN; do
-            if [ -z "${{ secrets[s] }}" ]; then echo "⚠️ Warning: $s not set"; fi
-          done
-          echo "Running strava_sync.py..."
-          python run_page/strava_sync.py \
-            "${{ secrets.STRAVA_CLIENT_ID }}" \
-            "${{ secrets.STRAVA_CLIENT_SECRET }}" \
-            "${{ secrets.STRAVA_CLIENT_REFRESH_TOKEN }}" || echo "⚠️ strava_sync.py failed"
+          if [ -z "${{ secrets.STRAVA_CLIENT_ID }}" ]; then echo "⚠️ STRAVA_CLIENT_ID not set"; exit 1; fi
+          if [ -z "${{ secrets.STRAVA_CLIENT_SECRET }}" ]; then echo "⚠️ STRAVA_CLIENT_SECRET not set"; exit 1; fi
+          if [ -z "${{ secrets.STRAVA_CLIENT_REFRESH_TOKEN }}" ]; then echo "⚠️ STRAVA_CLIENT_REFRESH_TOKEN not set"; exit 1; fi
+          python run_page/strava_sync.py "${{ secrets.STRAVA_CLIENT_ID }}" "${{ secrets.STRAVA_CLIENT_SECRET }}" "${{ secrets.STRAVA_CLIENT_REFRESH_TOKEN }}"
 
       # Garmin
       - name: Run sync Garmin
         if: env.RUN_TYPE == 'garmin'
         run: |
-          if [ -z "${{ secrets.GARMIN_SECRET_STRING }}" ]; then echo "⚠️ GARMIN_SECRET_STRING not set"; fi
-          echo "Running garmin_sync.py..."
-          python run_page/garmin_sync.py "${{ secrets.GARMIN_SECRET_STRING }}" || echo "⚠️ garmin_sync.py failed"
+          if [ -z "${{ secrets.GARMIN_SECRET_STRING }}" ]; then echo "⚠️ GARMIN_SECRET_STRING not set"; exit 1; fi
+          python run_page/garmin_sync.py "${{ secrets.GARMIN_SECRET_STRING }}"
 
       - name: Run sync Garmin CN
         if: env.RUN_TYPE == 'garmin_cn'
         run: |
-          if [ -z "${{ secrets.GARMIN_SECRET_STRING_CN }}" ]; then echo "⚠️ GARMIN_SECRET_STRING_CN not set"; fi
-          echo "Running garmin_sync.py CN..."
-          python run_page/garmin_sync.py "${{ secrets.GARMIN_SECRET_STRING_CN }}" --is-cn || echo "⚠️ garmin_sync.py CN failed"
+          if [ -z "${{ secrets.GARMIN_SECRET_STRING_CN }}" ]; then echo "⚠️ GARMIN_SECRET_STRING_CN not set"; exit 1; fi
+          python run_page/garmin_sync.py "${{ secrets.GARMIN_SECRET_STRING_CN }}" --is-cn
 
       - name: Run sync Garmin CN to Garmin
         if: env.RUN_TYPE == 'garmin_sync_cn_global'
         run: |
-          for s in GARMIN_SECRET_STRING_CN GARMIN_SECRET_STRING; do
-            if [ -z "${{ secrets[s] }}" ]; then echo "⚠️ Warning: $s not set"; fi
-          done
-          echo "Running garmin_sync_cn_global.py..."
-          python run_page/garmin_sync_cn_global.py "${{ secrets.GARMIN_SECRET_STRING_CN }}" "${{ secrets.GARMIN_SECRET_STRING }}" || echo "⚠️ garmin_sync_cn_global.py failed"
+          if [ -z "${{ secrets.GARMIN_SECRET_STRING_CN }}" ]; then echo "⚠️ GARMIN_SECRET_STRING_CN not set"; exit 1; fi
+          if [ -z "${{ secrets.GARMIN_SECRET_STRING }}" ]; then echo "⚠️ GARMIN_SECRET_STRING not set"; exit 1; fi
+          python run_page/garmin_sync_cn_global.py "${{ secrets.GARMIN_SECRET_STRING_CN }}" "${{ secrets.GARMIN_SECRET_STRING }}"
 
       - name: Run sync Garmin to Strava
         if: env.RUN_TYPE == 'garmin_to_strava'
         run: |
           for s in STRAVA_CLIENT_ID STRAVA_CLIENT_SECRET STRAVA_CLIENT_REFRESH_TOKEN GARMIN_EMAIL GARMIN_PASSWORD; do
-            if [ -z "${{ secrets[s] }}" ]; then echo "⚠️ Warning: $s not set"; fi
+            if [ -z "${{ secrets[s] }}" ]; then echo "⚠️ Secret $s not set"; exit 1; fi
           done
-          echo "Running garmin_to_strava_sync.py..."
           python run_page/garmin_to_strava_sync.py \
             "${{ secrets.STRAVA_CLIENT_ID }}" \
             "${{ secrets.STRAVA_CLIENT_SECRET }}" \
             "${{ secrets.STRAVA_CLIENT_REFRESH_TOKEN }}" \
             "${{ secrets.GARMIN_EMAIL }}" \
-            "${{ secrets.GARMIN_PASSWORD }}" || echo "⚠️ garmin_to_strava_sync.py failed"
+            "${{ secrets.GARMIN_PASSWORD }}"
