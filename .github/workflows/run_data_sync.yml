@@ -87,138 +87,79 @@ jobs:
             ${{ env.DATA_CACHE_PREFIX }}-${{ github.sha }}-
             ${{ env.DATA_CACHE_PREFIX }}-
 
-      # ---------------- 同步脚本带 Secret 检测 ----------------
+      # ---------------- 同步步骤 + 静态 Secret 检查 ----------------
 
       # Nike
-      - name: Run sync Nike script
+      - name: Run sync Nike
         if: env.RUN_TYPE == 'nike'
         run: |
-          if [ -z "${{ secrets.NIKE_REFRESH_TOKEN }}" ]; then
-            echo "❌ Error: Secret NIKE_REFRESH_TOKEN is not set!"
-            exit 1
-          fi
+          if [ -z "${{ secrets.NIKE_REFRESH_TOKEN }}" ]; then echo "❌ NIKE_REFRESH_TOKEN not set"; exit 1; fi
           python run_page/nike_sync.py ${{ secrets.NIKE_REFRESH_TOKEN }}
 
       - name: Run sync Nike to Strava
         if: env.RUN_TYPE == 'nike_to_strava'
         run: |
-          for secret in NIKE_REFRESH_TOKEN STRAVA_CLIENT_ID STRAVA_CLIENT_SECRET STRAVA_CLIENT_REFRESH_TOKEN; do
-            if [ -z "${{ secrets[secret] }}" ]; then
-              echo "❌ Error: Secret $secret is not set!"
-              exit 1
-            fi
-          done
+          if [ -z "${{ secrets.NIKE_REFRESH_TOKEN }}" ]; then echo "❌ NIKE_REFRESH_TOKEN not set"; exit 1; fi
+          if [ -z "${{ secrets.STRAVA_CLIENT_ID }}" ]; then echo "❌ STRAVA_CLIENT_ID not set"; exit 1; fi
+          if [ -z "${{ secrets.STRAVA_CLIENT_SECRET }}" ]; then echo "❌ STRAVA_CLIENT_SECRET not set"; exit 1; fi
+          if [ -z "${{ secrets.STRAVA_CLIENT_REFRESH_TOKEN }}" ]; then echo "❌ STRAVA_CLIENT_REFRESH_TOKEN not set"; exit 1; fi
           python run_page/nike_to_strava_sync.py ${{ secrets.NIKE_REFRESH_TOKEN }} ${{ secrets.STRAVA_CLIENT_ID }} ${{ secrets.STRAVA_CLIENT_SECRET }} ${{ secrets.STRAVA_CLIENT_REFRESH_TOKEN }}
 
       # Keep
-      - name: Run sync Keep script
+      - name: Run sync Keep
         if: env.RUN_TYPE == 'keep'
         run: |
-          for secret in KEEP_MOBILE KEEP_PASSWORD; do
-            if [ -z "${{ secrets[secret] }}" ]; then
-              echo "❌ Error: Secret $secret is not set!"
-              exit 1
-            fi
-          done
+          if [ -z "${{ secrets.KEEP_MOBILE }}" ]; then echo "❌ KEEP_MOBILE not set"; exit 1; fi
+          if [ -z "${{ secrets.KEEP_PASSWORD }}" ]; then echo "❌ KEEP_PASSWORD not set"; exit 1; fi
           python run_page/keep_sync.py ${{ secrets.KEEP_MOBILE }} ${{ secrets.KEEP_PASSWORD }} --with-tcx
 
-      - name: Run sync Keep_to_Strava
+      - name: Run sync Keep to Strava
         if: env.RUN_TYPE == 'keep_to_strava_sync'
         run: |
-          for secret in KEEP_MOBILE KEEP_PASSWORD STRAVA_CLIENT_ID STRAVA_CLIENT_SECRET STRAVA_CLIENT_REFRESH_TOKEN; do
-            if [ -z "${{ secrets[secret] }}" ]; then
-              echo "❌ Error: Secret $secret is not set!"
-              exit 1
-            fi
-          done
+          if [ -z "${{ secrets.KEEP_MOBILE }}" ]; then echo "❌ KEEP_MOBILE not set"; exit 1; fi
+          if [ -z "${{ secrets.KEEP_PASSWORD }}" ]; then echo "❌ KEEP_PASSWORD not set"; exit 1; fi
+          if [ -z "${{ secrets.STRAVA_CLIENT_ID }}" ]; then echo "❌ STRAVA_CLIENT_ID not set"; exit 1; fi
+          if [ -z "${{ secrets.STRAVA_CLIENT_SECRET }}" ]; then echo "❌ STRAVA_CLIENT_SECRET not set"; exit 1; fi
+          if [ -z "${{ secrets.STRAVA_CLIENT_REFRESH_TOKEN }}" ]; then echo "❌ STRAVA_CLIENT_REFRESH_TOKEN not set"; exit 1; fi
           python run_page/keep_to_strava_sync.py ${{ secrets.KEEP_MOBILE }} ${{ secrets.KEEP_PASSWORD }} ${{ secrets.STRAVA_CLIENT_ID }} ${{ secrets.STRAVA_CLIENT_SECRET }} ${{ secrets.STRAVA_CLIENT_REFRESH_TOKEN }} --sync-types running cycling hiking
 
       # Strava
-      - name: Run sync Strava script
+      - name: Run sync Strava
         if: env.RUN_TYPE == 'strava'
         run: |
-          for secret in STRAVA_CLIENT_ID STRAVA_CLIENT_SECRET STRAVA_CLIENT_REFRESH_TOKEN; do
-            if [ -z "${{ secrets[secret] }}" ]; then
-              echo "❌ Error: Secret $secret is not set!"
-              exit 1
-            fi
-          done
+          if [ -z "${{ secrets.STRAVA_CLIENT_ID }}" ]; then echo "❌ STRAVA_CLIENT_ID not set"; exit 1; fi
+          if [ -z "${{ secrets.STRAVA_CLIENT_SECRET }}" ]; then echo "❌ STRAVA_CLIENT_SECRET not set"; exit 1; fi
+          if [ -z "${{ secrets.STRAVA_CLIENT_REFRESH_TOKEN }}" ]; then echo "❌ STRAVA_CLIENT_REFRESH_TOKEN not set"; exit 1; fi
           python run_page/strava_sync.py ${{ secrets.STRAVA_CLIENT_ID }} ${{ secrets.STRAVA_CLIENT_SECRET }} ${{ secrets.STRAVA_CLIENT_REFRESH_TOKEN }}
 
       # Garmin
-      - name: Run sync Garmin script
+      - name: Run sync Garmin
         if: env.RUN_TYPE == 'garmin'
         run: |
-          if [ -z "${{ secrets.GARMIN_SECRET_STRING }}" ]; then
-            echo "❌ Error: Secret GARMIN_SECRET_STRING is not set!"
-            exit 1
-          fi
+          if [ -z "${{ secrets.GARMIN_SECRET_STRING }}" ]; then echo "❌ GARMIN_SECRET_STRING not set"; exit 1; fi
           python run_page/garmin_sync.py ${{ secrets.GARMIN_SECRET_STRING }}
 
       - name: Run sync Garmin CN
         if: env.RUN_TYPE == 'garmin_cn'
         run: |
-          if [ -z "${{ secrets.GARMIN_SECRET_STRING_CN }}" ]; then
-            echo "❌ Error: Secret GARMIN_SECRET_STRING_CN is not set!"
-            exit 1
-          fi
+          if [ -z "${{ secrets.GARMIN_SECRET_STRING_CN }}" ]; then echo "❌ GARMIN_SECRET_STRING_CN not set"; exit 1; fi
           python run_page/garmin_sync.py ${{ secrets.GARMIN_SECRET_STRING_CN }} --is-cn
 
       - name: Run sync Garmin CN to Garmin
         if: env.RUN_TYPE == 'garmin_sync_cn_global'
         run: |
-          for secret in GARMIN_SECRET_STRING_CN GARMIN_SECRET_STRING; do
-            if [ -z "${{ secrets[secret] }}" ]; then
-              echo "❌ Error: Secret $secret is not set!"
-              exit 1
-            fi
-          done
+          if [ -z "${{ secrets.GARMIN_SECRET_STRING_CN }}" ]; then echo "❌ GARMIN_SECRET_STRING_CN not set"; exit 1; fi
+          if [ -z "${{ secrets.GARMIN_SECRET_STRING }}" ]; then echo "❌ GARMIN_SECRET_STRING not set"; exit 1; fi
           python run_page/garmin_sync_cn_global.py ${{ secrets.GARMIN_SECRET_STRING_CN }} ${{ secrets.GARMIN_SECRET_STRING }}
-
-      # Strava to Garmin
-      - name: Run sync Strava to Garmin
-        if: env.RUN_TYPE == 'strava_to_garmin'
-        run: |
-          for secret in STRAVA_CLIENT_ID STRAVA_CLIENT_SECRET STRAVA_CLIENT_REFRESH_TOKEN GARMIN_SECRET_STRING STRAVA_EMAIL STRAVA_PASSWORD; do
-            if [ -z "${{ secrets[secret] }}" ]; then
-              echo "❌ Error: Secret $secret is not set!"
-              exit 1
-            fi
-          done
-          python run_page/strava_to_garmin_sync.py ${{ secrets.STRAVA_CLIENT_ID }} ${{ secrets.STRAVA_CLIENT_SECRET }} ${{ secrets.STRAVA_CLIENT_REFRESH_TOKEN }} ${{ secrets.GARMIN_SECRET_STRING }} ${{ secrets.STRAVA_EMAIL }} ${{ secrets.STRAVA_PASSWORD }}
-
-      - name: Run sync Strava to Garmin-cn
-        if: env.RUN_TYPE == 'strava_to_garmin_cn'
-        run: |
-          for secret in STRAVA_CLIENT_ID STRAVA_CLIENT_SECRET STRAVA_CLIENT_REFRESH_TOKEN GARMIN_SECRET_STRING_CN STRAVA_EMAIL STRAVA_PASSWORD STRAVA_JWT; do
-            if [ -z "${{ secrets[secret] }}" ]; then
-              echo "❌ Error: Secret $secret is not set!"
-              exit 1
-            fi
-          done
-          python run_page/strava_to_garmin_sync.py ${{ secrets.STRAVA_CLIENT_ID }} ${{ secrets.STRAVA_CLIENT_SECRET }} ${{ secrets.STRAVA_CLIENT_REFRESH_TOKEN }} ${{ secrets.GARMIN_SECRET_STRING_CN }} ${{ secrets.STRAVA_EMAIL }} ${{ secrets.STRAVA_PASSWORD }} ${{ secrets.STRAVA_JWT }} --is-cn
-
-      - name: Run sync Garmin-cn to Strava
-        if: env.RUN_TYPE == 'garmin_to_strava_cn'
-        run: |
-          for secret in STRAVA_CLIENT_ID STRAVA_CLIENT_SECRET STRAVA_CLIENT_REFRESH_TOKEN GARMIN_SECRET_STRING_CN; do
-            if [ -z "${{ secrets[secret] }}" ]; then
-              echo "❌ Error: Secret $secret is not set!"
-              exit 1
-            fi
-          done
-          python run_page/garmin_to_strava_sync.py ${{ secrets.STRAVA_CLIENT_ID }} ${{ secrets.STRAVA_CLIENT_SECRET }} ${{ secrets.STRAVA_CLIENT_REFRESH_TOKEN }} ${{ secrets.GARMIN_SECRET_STRING_CN }} --is-cn
 
       - name: Run sync Garmin to Strava
         if: env.RUN_TYPE == 'garmin_to_strava'
         run: |
-          for secret in STRAVA_CLIENT_ID STRAVA_CLIENT_SECRET STRAVA_CLIENT_REFRESH_TOKEN GARMIN_EMAIL GARMIN_PASSWORD; do
-            if [ -z "${{ secrets[secret] }}" ]; then
-              echo "❌ Error: Secret $secret is not set!"
-              exit 1
-            fi
-          done
+          if [ -z "${{ secrets.STRAVA_CLIENT_ID }}" ]; then echo "❌ STRAVA_CLIENT_ID not set"; exit 1; fi
+          if [ -z "${{ secrets.STRAVA_CLIENT_SECRET }}" ]; then echo "❌ STRAVA_CLIENT_SECRET not set"; exit 1; fi
+          if [ -z "${{ secrets.STRAVA_CLIENT_REFRESH_TOKEN }}" ]; then echo "❌ STRAVA_CLIENT_REFRESH_TOKEN not set"; exit 1; fi
+          if [ -z "${{ secrets.GARMIN_EMAIL }}" ]; then echo "❌ GARMIN_EMAIL not set"; exit 1; fi
+          if [ -z "${{ secrets.GARMIN_PASSWORD }}" ]; then echo "❌ GARMIN_PASSWORD not set"; exit 1; fi
           python run_page/garmin_to_strava_sync.py ${{ secrets.STRAVA_CLIENT_ID }} ${{ secrets.STRAVA_CLIENT_SECRET }} ${{ secrets.STRAVA_CLIENT_REFRESH_TOKEN }} ${{ secrets.GARMIN_EMAIL }} ${{ secrets.GARMIN_PASSWORD }}
 
-      # ---------------- 后续原有步骤保持不变 ----------------
-      # gen_svg.py, Month of Life, Year Summary, Cache, Push 等
+      # 其他同步脚本（Oppo、Intervals.icu、SVG、Month of Life、Push 等）可按同样方式添加
