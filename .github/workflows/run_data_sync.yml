@@ -293,5 +293,3 @@ jobs:
           echo "SAVE_DATA_IN_GITHUB_CACHE=$SAVE_DATA_IN_GITHUB_CACHE" >> "$GITHUB_OUTPUT"
           echo "DATA_CACHE_PREFIX=$DATA_CACHE_PREFIX" >> "$GITHUB_OUTPUT"
           echo "BUILD_GH_PAGES=$BUILD_GH_PAGES" >> "$GITHUB_OUTPUT"
-    needs:
-      - sync
